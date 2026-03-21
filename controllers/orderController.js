@@ -3,6 +3,8 @@ import OrderItem from "../schemas/orderItemSchema.js";
 import Product from "../schemas/productSchema.js";
 import Category from "../schemas/categorySchema.js";
 import Salesman from "../schemas/salesmanSchema.js";
+import { getNextOrderNumber } from "../utils/generateOrderNumber.js";
+import { sendOrderNotification } from "../utils/whatsappService.js";
 import mongoose from "mongoose";
 
 export const createOrder = async (req, res, next) => {
@@ -10,7 +12,7 @@ export const createOrder = async (req, res, next) => {
   session.startTransaction();
 
   try {
-    const { businessId } = req.user; // ✅ from JWT
+    const { businessId } = req.user;
 
     if (!businessId) {
       return res.status(400).json({
@@ -29,8 +31,30 @@ export const createOrder = async (req, res, next) => {
       items,
     } = req.body;
 
-    const orderNumber = "ORD-" + Date.now();
+    // -----------------------------
+    // FETCH PRODUCTS
+    // -----------------------------
+    const productIds = items.map((i) => i.productId);
 
+    const products = await Product.find({
+      _id: { $in: productIds },
+    })
+      .select("name_en")
+      .lean();
+
+    const productMap = {};
+    products.forEach((p) => {
+      productMap[p._id.toString()] = p;
+    });
+
+    // -----------------------------
+    // GENERATE ORDER NUMBER
+    // -----------------------------
+    const orderNumber = await getNextOrderNumber(businessId, session);
+
+    // -----------------------------
+    // CREATE ORDER
+    // -----------------------------
     const [order] = await Order.create(
       [
         {
@@ -47,6 +71,9 @@ export const createOrder = async (req, res, next) => {
       { session }
     );
 
+    // -----------------------------
+    // CREATE ORDER ITEMS
+    // -----------------------------
     const orderItems = items.map((item) => ({
       orderId: order._id,
       productId: item.productId,
@@ -58,11 +85,50 @@ export const createOrder = async (req, res, next) => {
 
     await session.commitTransaction();
 
+    // -----------------------------
+    // ENRICH RESPONSE
+    // -----------------------------
+    const enrichedItems = items.map((item) => {
+      const product = productMap[item.productId.toString()];
+
+      return {
+        productId: item.productId,
+        name: product?.name_en || "Product",
+        quantity: item.quantity,
+        variant: item.variant,
+      };
+    });
+
+    const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
+
+    // -----------------------------
+    // SEND WHATSAPP (ASYNC)
+    // -----------------------------
+    setImmediate(() => {
+      sendOrderNotification({
+        businessId,
+        orderNumber,
+        companyName,
+        phone,
+        items: enrichedItems,
+      });
+    });
+
+    // -----------------------------
+    // RESPONSE
+    // -----------------------------
     res.status(201).json({
       success: true,
       data: {
         orderId: order._id,
         orderNumber,
+        customerName,
+        companyName,
+        phone,
+        totalItems,
+        itemCount: enrichedItems.length,
+        items: enrichedItems,
+        createdAt: order.createdAt,
       },
     });
   } catch (err) {
@@ -145,7 +211,7 @@ export const updateOrderStatus = async (req, res, next) => {
     const order = await Order.findOneAndUpdate(
       { _id: id, businessId },
       { status },
-      { new: true }
+      { new: true },
     );
 
     if (!order) {
@@ -212,41 +278,84 @@ export const getRecentActivity = async (req, res, next) => {
   try {
     const { businessId } = req.user;
 
+    // -----------------------------
+    // FETCH DATA IN PARALLEL
+    // -----------------------------
     const [orders, products, salesmen] = await Promise.all([
-      Order.find({ businessId }).sort({ createdAt: -1 }).limit(3),
-      Product.find({ businessId }).sort({ createdAt: -1 }).limit(2),
-      Salesman.find({ businessId }).sort({ createdAt: -1 }).limit(2),
+      Order.find({ businessId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean(),
+
+      Product.find({ businessId })
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .lean(),
+
+      Salesman.find({ businessId })
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .lean(),
     ]);
 
     const activities = [];
 
+    // -----------------------------
+    // ORDER CREATION ACTIVITY
+    // -----------------------------
     orders.forEach((o) => {
       activities.push({
-        message: `Order ${o.orderNumber} created`,
+        type: "ORDER_CREATED",
+        message: `${o.companyName || "A customer"} placed an order (${o.orderNumber})`,
         time: o.createdAt,
       });
     });
 
+    // -----------------------------
+    // ORDER STATUS ACTIVITY
+    // -----------------------------
+    orders.forEach((o) => {
+      if (o.status && o.status !== "NEW") {
+        activities.push({
+          type: "ORDER_STATUS",
+          message: `Order ${o.orderNumber} marked as ${o.status}`,
+          time: o.updatedAt,
+        });
+      }
+    });
+
+    // -----------------------------
+    // PRODUCT ACTIVITY
+    // -----------------------------
     products.forEach((p) => {
       activities.push({
+        type: "PRODUCT_CREATED",
         message: `Product added: ${p.name_en}`,
         time: p.createdAt,
       });
     });
 
+    // -----------------------------
+    // SALESMAN ACTIVITY
+    // -----------------------------
     salesmen.forEach((s) => {
       activities.push({
+        type: "SALESMAN_CREATED",
         message: `New salesman added: ${s.name}`,
         time: s.createdAt,
       });
     });
 
-    // Sort all together
+    // -----------------------------
+    // SORT + LIMIT
+    // -----------------------------
     activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+    const finalActivities = activities.slice(0, 10);
 
     res.json({
       success: true,
-      data: activities.slice(0, 10),
+      data: finalActivities,
     });
   } catch (err) {
     next(err);

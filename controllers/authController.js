@@ -188,4 +188,17 @@ export const changePassword = async (req, res) => {
   });
 };
 
+export const getAdminProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId)
+      .select("-password")
+      .lean();
 
+    res.json({
+      success: true,
+      data: user,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

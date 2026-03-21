@@ -8,6 +8,7 @@ import {
   updateAdmin,
   login,
   changePassword,
+  getAdminProfile,
 } from "../controllers/authController.js";
 
 import {
@@ -30,5 +31,7 @@ authRouter
 authRouter.route("/login").post(validateLogin, login);
 
 authRouter.route("/change-password").post(validateChangePassword, authenticateJWT, changePassword);
+
+authRouter.route("/get-admin").get(authenticateJWT, authorizeRoles("ADMIN"), getAdminProfile);
 
 export default authRouter;

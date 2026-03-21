@@ -69,6 +69,9 @@ const productSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-productSchema.index({ businessId: 1, productCode: 1 });
+productSchema.index(
+  { businessId: 1, productCode: 1 },
+  { unique: true, sparse: true } // ✅ important
+);
 
 export default mongoose.model("Product", productSchema);

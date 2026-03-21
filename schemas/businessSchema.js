@@ -15,6 +15,12 @@ const businessSchema = new mongoose.Schema(
       trim: true,
     },
 
+    whatsappNumbers: [
+      {
+        type: String,
+      },
+    ],
+
     logo: String,
 
     email: {
@@ -39,7 +45,7 @@ const businessSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Business", businessSchema);

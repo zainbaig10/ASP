@@ -18,7 +18,26 @@ export const createProduct = async (req, res, next) => {
       badge,
     } = req.body;
 
-    // Clean variants
+    // -----------------------------
+    // CHECK DUPLICATE PRODUCT CODE
+    // -----------------------------
+    if (productCode) {
+      const exists = await Product.findOne({
+        businessId,
+        productCode,
+      });
+
+      if (exists) {
+        return res.status(409).json({
+          success: false,
+          msg: "Product code already exists",
+        });
+      }
+    }
+
+    // -----------------------------
+    // CLEAN VARIANTS
+    // -----------------------------
     if (variants) {
       variants.sizes = variants.sizes
         ? [...new Set(variants.sizes.map((s) => s.trim()))]
@@ -129,32 +148,26 @@ export const updateProduct = async (req, res, next) => {
     const { businessId } = req.user;
     const { id } = req.params;
 
-    let update = { ...req.body };
+    const {
+      name_en,
+      name_ar,
+      productCode,
+      categoryId,
+      description_en,
+      description_ar,
+      images,
+      variants,
+      badge,
+      status,
+    } = req.body;
 
-    if (update.name_en) {
-      update.name_en = update.name_en.trim();
-    }
-
-    // Clean variants
-    if (update.variants) {
-      update.variants.sizes = update.variants.sizes
-        ? [...new Set(update.variants.sizes.map((s) => s.trim()))]
-        : [];
-
-      update.variants.colors = update.variants.colors
-        ? [...new Set(update.variants.colors.map((c) => c.trim()))]
-        : [];
-
-      update.variants.packSizes = update.variants.packSizes
-        ? [...new Set(update.variants.packSizes.map((p) => p.trim()))]
-        : [];
-    }
-
-    const product = await Product.findOneAndUpdate(
-      { _id: id, businessId },
-      update,
-      { new: true, runValidators: true }
-    );
+    // -----------------------------
+    // FIND PRODUCT
+    // -----------------------------
+    const product = await Product.findOne({
+      _id: id,
+      businessId,
+    });
 
     if (!product) {
       return res.status(404).json({
@@ -163,8 +176,60 @@ export const updateProduct = async (req, res, next) => {
       });
     }
 
+    // -----------------------------
+    // DUPLICATE PRODUCT CODE CHECK
+    // -----------------------------
+    if (productCode !== undefined) {
+      const exists = await Product.findOne({
+        businessId,
+        productCode,
+        _id: { $ne: id }, // exclude current product
+      });
+
+      if (exists) {
+        return res.status(409).json({
+          success: false,
+          msg: "Product code already exists",
+        });
+      }
+
+      product.productCode = productCode;
+    }
+
+    // -----------------------------
+    // SAFE FIELD UPDATES
+    // -----------------------------
+    if (name_en !== undefined) product.name_en = name_en.trim();
+    if (name_ar !== undefined) product.name_ar = name_ar;
+    if (categoryId !== undefined) product.categoryId = categoryId;
+    if (description_en !== undefined) product.description_en = description_en;
+    if (description_ar !== undefined) product.description_ar = description_ar;
+    if (images !== undefined) product.images = images;
+    if (badge !== undefined) product.badge = badge;
+    if (status !== undefined) product.status = status;
+
+    // -----------------------------
+    // CLEAN VARIANTS
+    // -----------------------------
+    if (variants !== undefined) {
+      product.variants = {
+        sizes: variants.sizes
+          ? [...new Set(variants.sizes.map((s) => s.trim()))]
+          : [],
+        colors: variants.colors
+          ? [...new Set(variants.colors.map((c) => c.trim()))]
+          : [],
+        packSizes: variants.packSizes
+          ? [...new Set(variants.packSizes.map((p) => p.trim()))]
+          : [],
+      };
+    }
+
+    await product.save();
+
     res.json({
       success: true,
+      msg: "Product updated successfully",
       data: product,
     });
   } catch (err) {
