@@ -8,11 +8,22 @@ export const createCategory = async (req, res, next) => {
     const { businessId } = req.user;
     const { name_en, name_ar } = req.body;
 
-    const slug = name_en.toLowerCase().replace(/\s+/g, "-");
+    const cleanName = name_en.trim();
+    const slug = cleanName.toLowerCase().replace(/\s+/g, "-");
+
+    // ✅ CHECK DUPLICATE MANUALLY
+    const exists = await Category.findOne({ businessId, slug });
+
+    if (exists) {
+      return res.status(409).json({
+        success: false,
+        msg: "Category already exists",
+      });
+    }
 
     const category = await Category.create({
       businessId,
-      name_en: name_en.trim(),
+      name_en: cleanName,
       name_ar,
       slug,
     });
@@ -22,12 +33,6 @@ export const createCategory = async (req, res, next) => {
       data: category,
     });
   } catch (err) {
-    if (err.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        msg: "Category already exists",
-      });
-    }
     next(err);
   }
 };
@@ -68,29 +73,7 @@ export const updateCategory = async (req, res, next) => {
     const { id } = req.params;
     const { name_en, name_ar } = req.body;
 
-    const update = {};
-
-    if (name_en !== undefined) {
-      update.name_en = name_en.trim();
-      update.slug = name_en.toLowerCase().replace(/\s+/g, "-");
-    }
-
-    if (name_ar !== undefined) {
-      update.name_ar = name_ar;
-    }
-
-    if (Object.keys(update).length === 0) {
-      return res.status(400).json({
-        success: false,
-        msg: "No valid fields provided",
-      });
-    }
-
-    const category = await Category.findOneAndUpdate(
-      { _id: id, businessId },
-      update,
-      { new: true, runValidators: true }
-    );
+    const category = await Category.findOne({ _id: id, businessId });
 
     if (!category) {
       return res.status(404).json({
@@ -99,17 +82,39 @@ export const updateCategory = async (req, res, next) => {
       });
     }
 
+    if (name_en !== undefined) {
+      const cleanName = name_en.trim();
+      const slug = cleanName.toLowerCase().replace(/\s+/g, "-");
+
+      // ✅ DUPLICATE CHECK (excluding self)
+      const exists = await Category.findOne({
+        businessId,
+        slug,
+        _id: { $ne: id },
+      });
+
+      if (exists) {
+        return res.status(409).json({
+          success: false,
+          msg: "Category already exists",
+        });
+      }
+
+      category.name_en = cleanName;
+      category.slug = slug;
+    }
+
+    if (name_ar !== undefined) {
+      category.name_ar = name_ar;
+    }
+
+    await category.save();
+
     res.json({
       success: true,
       data: category,
     });
   } catch (err) {
-    if (err.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        msg: "Category already exists",
-      });
-    }
     next(err);
   }
 };

@@ -31,6 +31,9 @@ const categorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-categorySchema.index({ businessId: 1, slug: 1 }, { unique: true });
+categorySchema.index(
+  { businessId: 1, slug: 1 },
+  { unique: true }
+);
 
 export default mongoose.model("Category", categorySchema);

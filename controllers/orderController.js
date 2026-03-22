@@ -279,20 +279,23 @@ export const getRecentActivity = async (req, res, next) => {
     const { businessId } = req.user;
 
     // -----------------------------
-    // FETCH DATA IN PARALLEL
+    // FETCH DATA (PARALLEL + OPTIMIZED)
     // -----------------------------
     const [orders, products, salesmen] = await Promise.all([
       Order.find({ businessId })
+        .select("orderNumber companyName status createdAt updatedAt")
         .sort({ createdAt: -1 })
         .limit(5)
         .lean(),
 
       Product.find({ businessId })
+        .select("name_en createdAt")
         .sort({ createdAt: -1 })
         .limit(3)
         .lean(),
 
       Salesman.find({ businessId })
+        .select("name createdAt")
         .sort({ createdAt: -1 })
         .limit(3)
         .lean(),
@@ -301,7 +304,7 @@ export const getRecentActivity = async (req, res, next) => {
     const activities = [];
 
     // -----------------------------
-    // ORDER CREATION ACTIVITY
+    // ORDER CREATED
     // -----------------------------
     orders.forEach((o) => {
       activities.push({
@@ -312,20 +315,43 @@ export const getRecentActivity = async (req, res, next) => {
     });
 
     // -----------------------------
-    // ORDER STATUS ACTIVITY
+    // ORDER STATUS UPDATES
     // -----------------------------
     orders.forEach((o) => {
       if (o.status && o.status !== "NEW") {
+        let message = "";
+
+        switch (o.status) {
+          case "QUOTATION_SENT":
+            message = `Quotation sent for ${o.companyName || "customer"}`;
+            break;
+
+          case "CONFIRMED":
+            message = `Order ${o.orderNumber} confirmed`;
+            break;
+
+          case "CANCELLED":
+            message = `Order ${o.orderNumber} cancelled`;
+            break;
+
+          case "CONTACTED":
+            message = `Customer contacted for ${o.orderNumber}`;
+            break;
+
+          default:
+            message = `Order ${o.orderNumber} updated`;
+        }
+
         activities.push({
           type: "ORDER_STATUS",
-          message: `Order ${o.orderNumber} marked as ${o.status}`,
+          message,
           time: o.updatedAt,
         });
       }
     });
 
     // -----------------------------
-    // PRODUCT ACTIVITY
+    // PRODUCT CREATED
     // -----------------------------
     products.forEach((p) => {
       activities.push({
@@ -336,7 +362,7 @@ export const getRecentActivity = async (req, res, next) => {
     });
 
     // -----------------------------
-    // SALESMAN ACTIVITY
+    // SALESMAN CREATED
     // -----------------------------
     salesmen.forEach((s) => {
       activities.push({
@@ -347,10 +373,13 @@ export const getRecentActivity = async (req, res, next) => {
     });
 
     // -----------------------------
-    // SORT + LIMIT
+    // FINAL SORT (ALL MIXED)
     // -----------------------------
     activities.sort((a, b) => new Date(b.time) - new Date(a.time));
 
+    // -----------------------------
+    // LIMIT FINAL OUTPUT
+    // -----------------------------
     const finalActivities = activities.slice(0, 10);
 
     res.json({

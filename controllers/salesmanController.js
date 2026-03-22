@@ -5,9 +5,21 @@ export const createSalesman = async (req, res, next) => {
     const { businessId } = req.user;
     const { name, phone, email } = req.body;
 
+    // ✅ DUPLICATE EMAIL CHECK
+    if (email) {
+      const exists = await Salesman.findOne({ businessId, email });
+
+      if (exists) {
+        return res.status(409).json({
+          success: false,
+          msg: "Salesman with this email already exists",
+        });
+      }
+    }
+
     const salesman = await Salesman.create({
       businessId,
-      name,
+      name: name.trim(),
       phone,
       email,
     });
@@ -52,16 +64,29 @@ export const updateSalesman = async (req, res, next) => {
       businessId,
     });
 
-    if (!Salesman) {
+    if (!salesman) {
       return res.status(404).json({
         success: false,
         msg: "Salesman not found",
       });
     }
 
-    // -----------------------------
-    // ALLOWED UPDATES
-    // -----------------------------
+    // ✅ EMAIL DUPLICATE CHECK
+    if (email) {
+      const exists = await Salesman.findOne({
+        businessId,
+        email,
+        _id: { $ne: id },
+      });
+
+      if (exists) {
+        return res.status(409).json({
+          success: false,
+          msg: "Email already used",
+        });
+      }
+    }
+
     if (name !== undefined) salesman.name = name.trim();
     if (phone !== undefined) salesman.phone = phone;
     if (email !== undefined) salesman.email = email;

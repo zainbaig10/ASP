@@ -86,25 +86,56 @@ export const createProduct = async (req, res, next) => {
 export const getProducts = async (req, res, next) => {
   try {
     const { businessId } = req.user;
-    const { status, categoryId, search } = req.query;
+
+    const {
+      status,
+      categoryId,
+      search,
+      page = 1,
+      limit = 10,
+    } = req.query;
 
     const filter = { businessId };
 
+    // -----------------------------
+    // FILTERS
+    // -----------------------------
     if (status) filter.status = status;
     if (categoryId) filter.categoryId = categoryId;
 
+    // -----------------------------
+    // 🔍 LIVE SEARCH (AUTOCOMPLETE)
+    // -----------------------------
     if (search) {
-      filter.name_en = { $regex: search, $options: "i" };
+      filter.name_en = {
+        $regex: `^${search}`, // starts with (better UX)
+        $options: "i",
+      };
     }
 
+    // -----------------------------
+    // PAGINATION
+    // -----------------------------
+    const skip = (page - 1) * limit;
+
     const products = await Product.find(filter)
+      .select("name_en images categoryId variants status") // keep light
       .populate("categoryId", "name_en")
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit))
       .lean();
+
+    const total = await Product.countDocuments(filter);
 
     res.json({
       success: true,
       data: products,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+      },
     });
   } catch (err) {
     next(err);
