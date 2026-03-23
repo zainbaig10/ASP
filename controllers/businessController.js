@@ -105,36 +105,59 @@ export const updateBusiness = async (req, res) => {
 
     const {
       name,
-      address,
+      logo,
+      email,
       phone,
+      address,
+      country,
       currency,
       isActive,
       whatsappNumbers,
     } = req.body;
 
     // -----------------------------
-    // BASIC FIELDS
+    // UPDATE FIELDS
     // -----------------------------
     if (name !== undefined) {
       business.name = name.trim();
-
-      // OPTIONAL: update slug
       business.slug = slugify(name, { lower: true, strict: true });
     }
 
-    if (address !== undefined) business.address = address;
+    if (logo !== undefined) {
+      business.logo = logo;
+    }
 
-    if (phone !== undefined) business.phone = phone;
+    if (email !== undefined) {
+      business.email = email.toLowerCase().trim();
+    }
 
-    if (currency !== undefined) business.currency = currency;
+    if (phone !== undefined) {
+      business.phone = phone;
+    }
 
-    if (isActive !== undefined) business.isActive = isActive;
+    if (address !== undefined) {
+      business.address = address;
+    }
+
+    if (country !== undefined) {
+      business.country = country;
+    }
+
+    if (currency !== undefined) {
+      business.currency = currency;
+    }
+
+    if (isActive !== undefined) {
+      business.isActive = isActive;
+    }
 
     // -----------------------------
-    // WHATSAPP NUMBERS
+    // WHATSAPP NUMBERS (CLEAN)
     // -----------------------------
     if (whatsappNumbers !== undefined) {
-      business.whatsappNumbers = whatsappNumbers;
+      business.whatsappNumbers = whatsappNumbers.map((num) =>
+        num.replace(/\D/g, "")
+      );
     }
 
     await business.save();
