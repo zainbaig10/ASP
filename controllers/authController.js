@@ -72,35 +72,59 @@ export const createAdmin = async (req, res) => {
 };
 
 export const updateAdmin = async (req, res) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  const user = await User.findById(id);
+    const user = await User.findById(id);
 
-  if (!user || user.role !== "ADMIN") {
-    return res.status(404).json({
+    if (!user || user.role !== "ADMIN") {
+      return res.status(404).json({
+        success: false,
+        msg: "Admin not found",
+      });
+    }
+
+    const { name, email, password, isActive } = req.body;
+
+    // -----------------------------
+    // UPDATE FIELDS
+    // -----------------------------
+    if (name !== undefined) {
+      user.name = name.trim();
+    }
+
+    if (email !== undefined) {
+      user.email = email.toLowerCase().trim();
+    }
+
+    if (password) {
+      user.password = await bcrypt.hash(password, 10);
+    }
+
+    if (isActive !== undefined) {
+      user.isActive = isActive;
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      msg: "Admin updated successfully",
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isActive: user.isActive,
+      },
+    });
+  } catch (err) {
+    console.error("Update admin error:", err);
+
+    res.status(500).json({
       success: false,
-      msg: "Admin not found",
+      msg: err.message,
     });
   }
-
-  const { name, password, isActive } = req.body;
-
-  if (name) user.name = name;
-
-  if (password) {
-    user.password = await bcrypt.hash(password, 10);
-  }
-
-  if (isActive !== undefined) {
-    user.isActive = isActive;
-  }
-
-  await user.save();
-
-  res.json({
-    success: true,
-    msg: "Admin updated successfully",
-  });
 };
 
 export const login = async (req, res) => {
