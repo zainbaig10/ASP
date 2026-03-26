@@ -40,7 +40,7 @@ categoryRouter
 
 categoryRouter
   .route("/get-category")
-  .get(authenticateJWT, getCategories);
+  .get(getCategories);
 
 categoryRouter
   .route("/toggle-category/:id/status")

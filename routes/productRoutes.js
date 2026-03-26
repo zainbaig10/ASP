@@ -41,7 +41,7 @@ productRouter
 
 productRouter
   .route("/get-products")
-  .get(authenticateJWT, getProducts);
+  .get(getProducts);
 
 productRouter
   .route("/get-productById/:id")
