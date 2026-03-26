@@ -40,7 +40,7 @@ categoryRouter
 
 categoryRouter
   .route("/get-category")
-  .get(authenticateJWT, authorizeRoles("ADMIN"), getCategories);
+  .get(authenticateJWT, getCategories);
 
 categoryRouter
   .route("/toggle-category/:id/status")

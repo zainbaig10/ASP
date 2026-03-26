@@ -41,7 +41,7 @@ productRouter
 
 productRouter
   .route("/get-products")
-  .get(authenticateJWT, authorizeRoles("ADMIN"), getProducts);
+  .get(authenticateJWT, getProducts);
 
 productRouter
   .route("/get-productById/:id")
