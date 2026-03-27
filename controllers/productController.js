@@ -1,4 +1,5 @@
 import Product from "../schemas/productSchema.js";
+import Business from "../schemas/businessSchema.js";
 
 // -----------------------------
 // CREATE PRODUCT
@@ -328,6 +329,78 @@ export const deleteProduct = async (req, res, next) => {
     res.json({
       success: true,
       msg: "Product deleted",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getPublicProducts = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+
+    const {
+      categoryId,
+      search,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    // -----------------------------
+    // FIND BUSINESS
+    // -----------------------------
+    const business = await Business.findOne({ slug }).lean();
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        msg: "Business not found",
+      });
+    }
+
+    const filter = {
+      businessId: business._id,
+      status: "ACTIVE", // only active products for website
+    };
+
+    // -----------------------------
+    // FILTERS
+    // -----------------------------
+    if (categoryId) filter.categoryId = categoryId;
+
+    // -----------------------------
+    // 🔍 LIVE SEARCH (AUTOCOMPLETE)
+    // -----------------------------
+    if (search) {
+      filter.name_en = {
+        $regex: `^${search}`,
+        $options: "i",
+      };
+    }
+
+    // -----------------------------
+    // PAGINATION
+    // -----------------------------
+    const skip = (page - 1) * limit;
+
+    const products = await Product.find(filter)
+      .select("name_en name_ar images categoryId variants badge")
+      .populate("categoryId", "name_en")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean();
+
+    const total = await Product.countDocuments(filter);
+
+    res.json({
+      success: true,
+      data: products,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+      },
     });
   } catch (err) {
     next(err);

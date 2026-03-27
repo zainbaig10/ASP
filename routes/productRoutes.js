@@ -4,6 +4,7 @@ import {
   createProduct,
   getProductById,
   getProducts,
+  getPublicProducts,
   toggleProductStatus,
   updateProduct,
 } from "../controllers/productController.js";
@@ -41,7 +42,7 @@ productRouter
 
 productRouter
   .route("/get-products")
-  .get(getProducts);
+  .get(authenticateJWT, authorizeRoles("ADMIN"), getProducts);
 
 productRouter
   .route("/get-productById/:id")
@@ -55,5 +56,5 @@ productRouter
     validateToggleProductStatus,
     toggleProductStatus,
   );
-
+productRouter.route("/getPublicProducts").get(getPublicProducts);
 export default productRouter;
