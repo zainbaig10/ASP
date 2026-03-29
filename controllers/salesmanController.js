@@ -1,4 +1,5 @@
 import Salesman from "../schemas/salesmanSchema.js";
+import Business from "../schemas/businessSchema.js";
 
 export const createSalesman = async (req, res, next) => {
   try {
@@ -132,3 +133,28 @@ export const toggleSalesmanStatus = async (req, res, next) => {
   }
 };
 
+export const getPublicSalesmen = async (req, res, next) => {
+  try {
+    // Example: fetch the business (adjust logic as per your app)
+    const business = await Business.findOne({}); // or by domain/email/etc.
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        msg: "Business not found",
+      });
+    }
+
+    const salesmen = await Salesman.find({
+      businessId: business._id,
+      status: "ACTIVE",
+    }).lean();
+
+    res.json({
+      success: true,
+      data: salesmen,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

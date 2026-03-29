@@ -1,6 +1,6 @@
 import express from "express";
 
-import { createSalesman, getSalesmen, toggleSalesmanStatus, updateSalesman } from "../controllers/salesmanController.js";
+import { createSalesman, getPublicSalesmen, getSalesmen, toggleSalesmanStatus, updateSalesman } from "../controllers/salesmanController.js";
 
 import {
     authenticateJWT,
@@ -45,5 +45,7 @@ salesmanRouter
     validateToggleSalesmanStatus,
     toggleSalesmanStatus
   );
+
+salesmanRouter.route("/getPublicSalesmen").get(getPublicSalesmen)  
 
 export default salesmanRouter;
