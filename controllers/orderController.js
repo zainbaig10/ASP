@@ -7,21 +7,145 @@ import { getNextOrderNumber } from "../utils/generateOrderNumber.js";
 import { sendOrderNotification } from "../utils/whatsappService.js";
 import mongoose from "mongoose";
 
+// export const createOrder = async (req, res, next) => {
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     const { businessId } = req.user;
+
+//     if (!businessId) {
+//       return res.status(400).json({
+//         success: false,
+//         msg: "Business context missing",
+//       });
+//     }
+
+//     const {
+//       salesmanId,
+//       customerName,
+//       companyName,
+//       email,
+//       phone,
+//       notes,
+//       items,
+//     } = req.body;
+
+//     // -----------------------------
+//     // FETCH PRODUCTS
+//     // -----------------------------
+//     const productIds = items.map((i) => i.productId);
+
+//     const products = await Product.find({
+//       _id: { $in: productIds },
+//     })
+//       .select("name_en")
+//       .lean();
+
+//     const productMap = {};
+//     products.forEach((p) => {
+//       productMap[p._id.toString()] = p;
+//     });
+
+//     // -----------------------------
+//     // GENERATE ORDER NUMBER
+//     // -----------------------------
+//     const orderNumber = await getNextOrderNumber(businessId, session);
+
+//     // -----------------------------
+//     // CREATE ORDER
+//     // -----------------------------
+//     const [order] = await Order.create(
+//       [
+//         {
+//           businessId,
+//           orderNumber,
+//           salesmanId,
+//           customerName,
+//           companyName,
+//           email,
+//           phone,
+//           notes,
+//         },
+//       ],
+//       { session }
+//     );
+
+//     // -----------------------------
+//     // CREATE ORDER ITEMS
+//     // -----------------------------
+//     const orderItems = items.map((item) => ({
+//       orderId: order._id,
+//       productId: item.productId,
+//       quantity: item.quantity,
+//       variant: item.variant,
+//     }));
+
+//     await OrderItem.insertMany(orderItems, { session });
+
+//     await session.commitTransaction();
+
+//     // -----------------------------
+//     // ENRICH RESPONSE
+//     // -----------------------------
+//     const enrichedItems = items.map((item) => {
+//       const product = productMap[item.productId.toString()];
+
+//       return {
+//         productId: item.productId,
+//         name: product?.name_en || "Product",
+//         quantity: item.quantity,
+//         variant: item.variant,
+//       };
+//     });
+
+//     const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
+
+//     // -----------------------------
+//     // SEND WHATSAPP (ASYNC)
+//     // -----------------------------
+//     setImmediate(() => {
+//       sendOrderNotification({
+//         businessId,
+//         orderNumber,
+//         companyName,
+//         phone,
+//         items: enrichedItems,
+//       });
+//     });
+
+//     // -----------------------------
+//     // RESPONSE
+//     // -----------------------------
+//     res.status(201).json({
+//       success: true,
+//       data: {
+//         orderId: order._id,
+//         orderNumber,
+//         customerName,
+//         companyName,
+//         phone,
+//         totalItems,
+//         itemCount: enrichedItems.length,
+//         items: enrichedItems,
+//         createdAt: order.createdAt,
+//       },
+//     });
+//   } catch (err) {
+//     await session.abortTransaction();
+//     next(err);
+//   } finally {
+//     session.endSession();
+//   }
+// };
+
 export const createOrder = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const { businessId } = req.user;
-
-    if (!businessId) {
-      return res.status(400).json({
-        success: false,
-        msg: "Business context missing",
-      });
-    }
-
     const {
+      businessId,
       salesmanId,
       customerName,
       companyName,
@@ -30,6 +154,20 @@ export const createOrder = async (req, res, next) => {
       notes,
       items,
     } = req.body;
+
+    if (!businessId) {
+      return res.status(400).json({
+        success: false,
+        msg: "Business ID is required",
+      });
+    }
+
+    if (!items || !items.length) {
+      return res.status(400).json({
+        success: false,
+        msg: "Order items are required",
+      });
+    }
 
     // -----------------------------
     // FETCH PRODUCTS

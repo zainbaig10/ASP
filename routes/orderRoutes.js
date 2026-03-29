@@ -11,14 +11,16 @@ import { validateCreateOrder } from "../validators/orderValidator.js";
 
 const orderRouter = express.Router();
 
-orderRouter
-  .route("/create-order")
-  .post(
-    authenticateJWT,
-    authorizeRoles("ADMIN"),
-    validateCreateOrder,
-    createOrder,
-  );
+// orderRouter
+//   .route("/create-order")
+//   .post(
+//     authenticateJWT,
+//     authorizeRoles("ADMIN"),
+//     validateCreateOrder,
+//     createOrder,
+//   );
+
+orderRouter.route("/create-order").post(createOrder);
 
 orderRouter
   .route("/get-orders")
