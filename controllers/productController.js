@@ -109,7 +109,7 @@ export const getProducts = async (req, res, next) => {
     // -----------------------------
     if (search) {
       filter.name_en = {
-        $regex: `^${search}`, // starts with (better UX)
+        $regex: `^${search}`,
         $options: "i",
       };
     }
@@ -120,7 +120,7 @@ export const getProducts = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const products = await Product.find(filter)
-      .select("name_en images categoryId variants status") // keep light
+      .select("name_en images categoryId variants status productCode badge") // ✅ FIXED
       .populate("categoryId", "name_en")
       .sort({ createdAt: -1 })
       .skip(skip)
