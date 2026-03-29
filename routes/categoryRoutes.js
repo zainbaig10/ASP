@@ -14,8 +14,6 @@ import {
 } from "../middleware/authMiddleware.js";
 
 import {
-  validateCreateCategory,
-  validateUpdateCategory,
   validateToggleCategoryStatus
 } from "../validators/categoryValidator.js";
 

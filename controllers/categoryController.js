@@ -6,13 +6,28 @@ import Business from "../schemas/businessSchema.js";
 export const createCategory = async (req, res, next) => {
   try {
     const { businessId } = req.user;
-    const { name_en, name_ar } = req.body;
 
-    const cleanName = name_en.trim();
+    // ✅ FIX BODY FIELD NAMES
+    const { name, nameAr } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        msg: "Category name is required",
+      });
+    }
+
+    // ✅ CLEAN NAME
+    const cleanName = name.trim();
+
+    // ✅ GENERATE SLUG
     const slug = cleanName.toLowerCase().replace(/\s+/g, "-");
 
-    // ✅ CHECK DUPLICATE MANUALLY
-    const exists = await Category.findOne({ businessId, slug });
+    // ✅ CHECK DUPLICATE (IMPORTANT FIX)
+    const exists = await Category.findOne({
+      businessId,
+      slug,
+    });
 
     if (exists) {
       return res.status(409).json({
@@ -21,10 +36,11 @@ export const createCategory = async (req, res, next) => {
       });
     }
 
+    // ✅ CREATE CATEGORY
     const category = await Category.create({
       businessId,
       name_en: cleanName,
-      name_ar,
+      name_ar: nameAr,
       slug,
     });
 
@@ -36,6 +52,7 @@ export const createCategory = async (req, res, next) => {
     next(err);
   }
 };
+
 
 // -----------------------------
 // GET CATEGORIES
