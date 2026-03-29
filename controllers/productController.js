@@ -406,3 +406,30 @@ export const getPublicProducts = async (req, res, next) => {
     next(err);
   }
 };
+
+export const getPublicProductById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const product = await Product.findOne({
+      _id: id,
+      status: "ACTIVE", // ✅ only public/active products
+    })
+      .populate("categoryId", "name_en")
+      .lean();
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        msg: "Product not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: product,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

@@ -4,6 +4,7 @@ import {
   createProduct,
   getProductById,
   getProducts,
+  getPublicProductById,
   getPublicProducts,
   toggleProductStatus,
   updateProduct,
@@ -57,4 +58,6 @@ productRouter
     toggleProductStatus,
   );
 productRouter.route("/getPublicProducts").get(getPublicProducts);
+
+productRouter.route("/getPublicProductByID/:id").get(getPublicProductById);
 export default productRouter;
