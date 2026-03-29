@@ -187,7 +187,7 @@ export const getOrderDetails = async (req, res, next) => {
     }
 
     const items = await OrderItem.find({ orderId: id })
-      .populate("productId", "name_en images")
+      .populate("productId", "name_en images productCode badge variants status") // ✅ FIXED
       .lean();
 
     res.json({
