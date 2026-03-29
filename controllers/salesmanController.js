@@ -40,7 +40,6 @@ export const getSalesmen = async (req, res, next) => {
 
     const salesmen = await Salesman.find({
       businessId,
-      status: "ACTIVE",
     }).lean();
 
     res.json({
@@ -51,6 +50,7 @@ export const getSalesmen = async (req, res, next) => {
     next(err);
   }
 };
+
 
 
 export const updateSalesman = async (req, res, next) => {
