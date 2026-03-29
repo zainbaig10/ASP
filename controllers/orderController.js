@@ -6,6 +6,7 @@ import Salesman from "../schemas/salesmanSchema.js";
 import { getNextOrderNumber } from "../utils/generateOrderNumber.js";
 import { sendOrderNotification } from "../utils/whatsappService.js";
 import mongoose from "mongoose";
+import Business from "../schemas/businessSchema.js";
 
 // export const createOrder = async (req, res, next) => {
 //   const session = await mongoose.startSession();
@@ -145,7 +146,6 @@ export const createOrder = async (req, res, next) => {
 
   try {
     const {
-      businessId,
       salesmanId,
       customerName,
       companyName,
@@ -155,19 +155,28 @@ export const createOrder = async (req, res, next) => {
       items,
     } = req.body;
 
-    if (!businessId) {
-      return res.status(400).json({
-        success: false,
-        msg: "Business ID is required",
-      });
-    }
-
     if (!items || !items.length) {
       return res.status(400).json({
         success: false,
         msg: "Order items are required",
       });
     }
+
+    // -----------------------------
+    // FETCH BUSINESS (AUTO)
+    // -----------------------------
+    // ⚠️ Adjust this logic as per your system
+    // Example: if only one business exists
+    const business = await Business.findOne({});
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        msg: "Business not found",
+      });
+    }
+
+    const businessId = business._id;
 
     // -----------------------------
     // FETCH PRODUCTS
