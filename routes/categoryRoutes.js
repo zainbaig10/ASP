@@ -26,7 +26,6 @@ categoryRouter
   .post(
     authenticateJWT,
     authorizeRoles("ADMIN"),
-    validateCreateCategory,
     createCategory,
   );
 
@@ -35,7 +34,6 @@ categoryRouter
   .put(
     authenticateJWT,
     authorizeRoles("ADMIN"),
-    validateUpdateCategory,
     updateCategory,
   );
 
