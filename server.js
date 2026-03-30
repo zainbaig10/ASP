@@ -25,7 +25,7 @@ app.use(helmet());
 // ----------------------
 // Rate Limiter
 // ----------------------
-app.use(limiter);
+// app.use(limiter);
 
 // ----------------------
 // Body Parsers
