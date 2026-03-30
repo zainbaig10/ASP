@@ -337,8 +337,6 @@ export const deleteProduct = async (req, res, next) => {
 
 export const getPublicProducts = async (req, res, next) => {
   try {
-    const { slug } = req.params;
-
     const {
       categoryId,
       search,
@@ -347,9 +345,9 @@ export const getPublicProducts = async (req, res, next) => {
     } = req.query;
 
     // -----------------------------
-    // FIND BUSINESS
+    // GET BUSINESS (NO SLUG NEEDED)
     // -----------------------------
-    const business = await Business.findOne({ slug }).lean();
+    const business = await Business.findOne().lean();
 
     if (!business) {
       return res.status(404).json({
@@ -360,7 +358,7 @@ export const getPublicProducts = async (req, res, next) => {
 
     const filter = {
       businessId: business._id,
-      status: "ACTIVE", // only active products for website
+      status: "ACTIVE",
     };
 
     // -----------------------------
@@ -369,7 +367,7 @@ export const getPublicProducts = async (req, res, next) => {
     if (categoryId) filter.categoryId = categoryId;
 
     // -----------------------------
-    // 🔍 LIVE SEARCH (AUTOCOMPLETE)
+    // 🔍 SEARCH
     // -----------------------------
     if (search) {
       filter.name_en = {
