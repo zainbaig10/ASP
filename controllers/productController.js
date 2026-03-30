@@ -411,9 +411,9 @@ export const getPublicProductById = async (req, res, next) => {
 
     const product = await Product.findOne({
       _id: id,
-      status: "ACTIVE", // ✅ only public/active products
+      status: "ACTIVE",
     })
-      .populate("categoryId", "name_en")
+      .populate("categoryId", "name_en name_ar") // ✅ FIX
       .lean();
 
     if (!product) {
