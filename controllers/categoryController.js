@@ -169,10 +169,10 @@ export const toggleCategoryStatus = async (req, res, next) => {
 
 export const getPublicCategories = async (req, res, next) => {
   try {
-    const { slug } = req.params;
-
-    // 1. Find business by slug
-    const business = await Business.findOne({ slug }).lean();
+    // -----------------------------
+    // GET BUSINESS (NO SLUG)
+    // -----------------------------
+    const business = await Business.findOne({ isActive: true }).lean();
 
     if (!business) {
       return res.status(404).json({
@@ -181,10 +181,12 @@ export const getPublicCategories = async (req, res, next) => {
       });
     }
 
-    // 2. Get categories
+    // -----------------------------
+    // GET CATEGORIES
+    // -----------------------------
     const categories = await Category.find({
       businessId: business._id,
-      isActive: true,
+      status: "ACTIVE", // ✅ FIX (your schema uses status, not isActive)
     })
       .sort({ name_en: 1 })
       .lean();
