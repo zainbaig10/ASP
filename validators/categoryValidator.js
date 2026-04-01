@@ -4,18 +4,37 @@ import { body, param, query, validationResult } from "express-validator";
 // CREATE
 // -----------------------------
 export const validateCreateCategory = [
-  body("name_en")
+  // -----------------------------
+  // NAME (EN)
+  // -----------------------------
+  body("name")
     .trim()
     .notEmpty()
-    .withMessage("English name is required")
+    .withMessage("Category name is required")
     .isLength({ min: 2 })
-    .withMessage("Must be at least 2 characters"),
+    .withMessage("Name must be at least 2 characters"),
 
-  body("name_ar")
+  // -----------------------------
+  // NAME (AR)
+  // -----------------------------
+  body("nameAr")
     .optional()
     .isString()
-    .withMessage("Arabic name must be string"),
+    .withMessage("Arabic name must be a string"),
 
+  // -----------------------------
+  // IMAGE
+  // -----------------------------
+  body("image")
+    .optional()
+    .isString()
+    .withMessage("Image must be a string URL")
+    .isLength({ max: 500 })
+    .withMessage("Image URL too long"),
+
+  // -----------------------------
+  // FINAL HANDLER
+  // -----------------------------
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -32,18 +51,44 @@ export const validateCreateCategory = [
 // UPDATE
 // -----------------------------
 export const validateUpdateCategory = [
-  param("id").isMongoId().withMessage("Invalid category ID"),
-
+  // -----------------------------
+  // NAME (EN)
+  // -----------------------------
   body("name_en")
     .optional()
     .trim()
     .isLength({ min: 2 })
-    .withMessage("Must be at least 2 characters"),
+    .withMessage("Name must be at least 2 characters"),
 
+  // -----------------------------
+  // NAME (AR)
+  // -----------------------------
   body("name_ar")
     .optional()
-    .isString(),
+    .isString()
+    .withMessage("Arabic name must be a string"),
 
+  // -----------------------------
+  // IMAGE
+  // -----------------------------
+  body("image")
+    .optional()
+    .isString()
+    .withMessage("Image must be a string URL")
+    .isLength({ max: 500 })
+    .withMessage("Image URL too long"),
+
+  // -----------------------------
+  // STATUS
+  // -----------------------------
+  body("status")
+    .optional()
+    .isIn(["ACTIVE", "INACTIVE"])
+    .withMessage("Invalid status"),
+
+  // -----------------------------
+  // FINAL HANDLER
+  // -----------------------------
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -55,6 +100,7 @@ export const validateUpdateCategory = [
     next();
   },
 ];
+
 
 // -----------------------------
 // STATUS

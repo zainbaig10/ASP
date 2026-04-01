@@ -7,8 +7,7 @@ export const createCategory = async (req, res, next) => {
   try {
     const { businessId } = req.user;
 
-    // ✅ FIX BODY FIELD NAMES
-    const { name, nameAr } = req.body;
+    const { name, nameAr, image } = req.body;
 
     if (!name) {
       return res.status(400).json({
@@ -17,13 +16,9 @@ export const createCategory = async (req, res, next) => {
       });
     }
 
-    // ✅ CLEAN NAME
     const cleanName = name.trim();
-
-    // ✅ GENERATE SLUG
     const slug = cleanName.toLowerCase().replace(/\s+/g, "-");
 
-    // ✅ CHECK DUPLICATE (IMPORTANT FIX)
     const exists = await Category.findOne({
       businessId,
       slug,
@@ -36,12 +31,12 @@ export const createCategory = async (req, res, next) => {
       });
     }
 
-    // ✅ CREATE CATEGORY
     const category = await Category.create({
       businessId,
       name_en: cleanName,
       name_ar: nameAr,
       slug,
+      image: image || "", // ✅ NEW
     });
 
     res.status(201).json({
@@ -52,7 +47,6 @@ export const createCategory = async (req, res, next) => {
     next(err);
   }
 };
-
 
 // -----------------------------
 // GET CATEGORIES
@@ -88,7 +82,8 @@ export const updateCategory = async (req, res, next) => {
   try {
     const { businessId } = req.user;
     const { id } = req.params;
-    const { name_en, name_ar } = req.body;
+
+    const { name_en, name_ar, image, status } = req.body;
 
     const category = await Category.findOne({ _id: id, businessId });
 
@@ -99,11 +94,13 @@ export const updateCategory = async (req, res, next) => {
       });
     }
 
+    // -----------------------------
+    // NAME UPDATE
+    // -----------------------------
     if (name_en !== undefined) {
       const cleanName = name_en.trim();
       const slug = cleanName.toLowerCase().replace(/\s+/g, "-");
 
-      // ✅ DUPLICATE CHECK (excluding self)
       const exists = await Category.findOne({
         businessId,
         slug,
@@ -123,6 +120,20 @@ export const updateCategory = async (req, res, next) => {
 
     if (name_ar !== undefined) {
       category.name_ar = name_ar;
+    }
+
+    // -----------------------------
+    // ✅ IMAGE UPDATE
+    // -----------------------------
+    if (image !== undefined) {
+      category.image = image;
+    }
+
+    // -----------------------------
+    // STATUS UPDATE (optional)
+    // -----------------------------
+    if (status !== undefined) {
+      category.status = status;
     }
 
     await category.save();

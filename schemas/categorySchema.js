@@ -22,6 +22,12 @@ const categorySchema = new mongoose.Schema(
       required: true,
     },
 
+    // ✅ NEW FIELD
+    image: {
+      type: String, // store URL or path
+      default: "",
+    },
+
     status: {
       type: String,
       enum: ["ACTIVE", "INACTIVE"],
