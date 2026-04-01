@@ -340,12 +340,13 @@ export const getPublicProducts = async (req, res, next) => {
     const {
       categoryId,
       search,
+      badge,
       page = 1,
       limit = 10,
     } = req.query;
 
     // -----------------------------
-    // GET BUSINESS (NO SLUG NEEDED)
+    // GET BUSINESS
     // -----------------------------
     const business = await Business.findOne().lean();
 
@@ -366,8 +367,13 @@ export const getPublicProducts = async (req, res, next) => {
     // -----------------------------
     if (categoryId) filter.categoryId = categoryId;
 
+    // ✅ BADGE FILTER
+    if (badge) {
+      filter.badge = badge.toUpperCase();
+    }
+
     // -----------------------------
-    // 🔍 SEARCH
+    // 🔍 SEARCH (AUTOCOMPLETE)
     // -----------------------------
     if (search) {
       filter.name_en = {
@@ -382,8 +388,10 @@ export const getPublicProducts = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const products = await Product.find(filter)
-      .select("name_en name_ar images categoryId variants badge")
-      .populate("categoryId", "name_en")
+      .select(
+        "name_en name_ar productCode images categoryId variants badge"
+      )
+      .populate("categoryId", "name_en name_ar") // ✅ both EN + AR
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
@@ -404,6 +412,8 @@ export const getPublicProducts = async (req, res, next) => {
     next(err);
   }
 };
+
+
 
 export const getPublicProductById = async (req, res, next) => {
   try {
