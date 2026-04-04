@@ -16,6 +16,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4050;
+const DEPLOY_ENV = process.env.DEPLOY_ENV || "local";
 
 // ----------------------
 // Security Middleware
@@ -83,22 +84,33 @@ app.use(errorHandler);
 // ----------------------
 // Server Start
 // ----------------------
-const sslKeyPath = process.env.SSL_KEY_PATH;
-const sslCertPath = process.env.SSL_CERT_PATH;
-
 const startServer = () => {
-  if (sslKeyPath && sslCertPath) {
-    const sslOptions = {
-      key: fs.readFileSync(sslKeyPath),
-      cert: fs.readFileSync(sslCertPath),
-    };
-
-    https.createServer(sslOptions, app).listen(PORT, () => {
-      logger.info(`🔐 HTTPS Server running on port ${PORT}`);
-    });
-  } else {
+  if (DEPLOY_ENV === "local") {
+    // Local → HTTP
     http.createServer(app).listen(PORT, () => {
-      logger.info(`🚀 HTTP Server running on port ${PORT}`);
+      logger.info(`🚀 Local HTTP Server running on port ${PORT}`);
+    });
+  } else if (DEPLOY_ENV === "prod") {
+    // Production → HTTPS (SSL required)
+    try {
+      const sslOptions = {
+        key: fs.readFileSync(process.env.SSL_KEY_PATH),
+        cert: fs.readFileSync(process.env.SSL_CERT_PATH),
+      };
+
+      https.createServer(sslOptions, app).listen(PORT, () => {
+        logger.info(`🔐 Production HTTPS Server running on port ${PORT}`);
+      });
+    } catch (error) {
+      logger.error("❌ Failed to start HTTPS server:", error);
+      process.exit(1);
+    }
+  } else {
+    // Fallback (if DEPLOY_ENV misconfigured)
+    http.createServer(app).listen(PORT, () => {
+      logger.warn(
+        `⚠️ Unknown DEPLOY_ENV. Defaulting to HTTP on port ${PORT}`
+      );
     });
   }
 };
