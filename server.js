@@ -49,7 +49,14 @@ app.use(
 // ----------------------
 // Static Files (🔥 ADD THIS HERE)
 // ----------------------
-app.use("/uploads", express.static("uploads"));
+app.use(
+  "/uploads",
+  (req, res, next) => {
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    next();
+  },
+  express.static("uploads")
+);
 
 // ----------------------
 // Database Connection
