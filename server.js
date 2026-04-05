@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+dotenv.config({ path: "./.env" }); 
 import fs from "fs";
 import http from "http";
 import https from "https";

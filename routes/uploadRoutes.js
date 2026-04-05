@@ -22,7 +22,10 @@ const upload = multer({
 
 // ROUTE
 router.post("/", upload.single("image"), (req, res) => {
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl =
+    process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+
+  console.log("BASE_URL:", process.env.BASE_URL);
 
   const fullUrl = `${baseUrl}/uploads/products/${req.file.filename}`;
 
