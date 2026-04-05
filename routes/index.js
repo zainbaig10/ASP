@@ -5,7 +5,7 @@ import categoryRouter from "./categoryRoutes.js";
 import productRouter from "./productRoutes.js";
 import orderRouter from "./orderRoutes.js";
 import salesmanRouter from "./salesmanRoutes.js";
-
+import uploadRoutes from "./uploadRoutes.js";
 
 const router = expressRouter();
 
@@ -15,6 +15,6 @@ router.use("/category", categoryRouter);
 router.use("/product", productRouter);
 router.use("/order", orderRouter);
 router.use("/salesman", salesmanRouter);
-
+router.use("/upload", uploadRoutes); // ✅ FIXED
 
 export default router;

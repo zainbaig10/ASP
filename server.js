@@ -46,6 +46,11 @@ app.use(
 );
 
 // ----------------------
+// Static Files (🔥 ADD THIS HERE)
+// ----------------------
+app.use("/uploads", express.static("uploads"));
+
+// ----------------------
 // Database Connection
 // ----------------------
 connectDB();
@@ -106,7 +111,7 @@ const startServer = () => {
       process.exit(1);
     }
   } else {
-    // Fallback (if DEPLOY_ENV misconfigured)
+    // Fallback
     http.createServer(app).listen(PORT, () => {
       logger.warn(
         `⚠️ Unknown DEPLOY_ENV. Defaulting to HTTP on port ${PORT}`
