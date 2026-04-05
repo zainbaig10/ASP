@@ -22,10 +22,13 @@ const upload = multer({
 
 // ROUTE
 router.post("/", upload.single("image"), (req, res) => {
+  const fullUrl = `${req.protocol}://${req.get("host")}/uploads/products/${req.file.filename}`;
+
   res.json({
     success: true,
-    url: `/uploads/products/${req.file.filename}`,
+    url: fullUrl, // ✅ FULL URL
   });
 });
+
 
 export default router;
