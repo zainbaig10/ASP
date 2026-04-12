@@ -93,7 +93,7 @@ export const getProducts = async (req, res, next) => {
       categoryId,
       search,
       page = 1,
-      limit = 10,
+      limit = 1000, // 🔥 FIX: return all products
     } = req.query;
 
     const filter = { businessId };
@@ -105,11 +105,11 @@ export const getProducts = async (req, res, next) => {
     if (categoryId) filter.categoryId = categoryId;
 
     // -----------------------------
-    // 🔍 LIVE SEARCH (AUTOCOMPLETE)
+    // 🔍 SEARCH
     // -----------------------------
     if (search) {
       filter.name_en = {
-        $regex: `^${search}`,
+        $regex: search, // 🔥 FIX: not only startsWith
         $options: "i",
       };
     }
@@ -120,7 +120,9 @@ export const getProducts = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const products = await Product.find(filter)
-      .select("name_en images categoryId variants status productCode badge") // ✅ FIXED
+      .select(
+        "name_en images categoryId variants status productCode badge"
+      )
       .populate("categoryId", "name_en")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -342,7 +344,7 @@ export const getPublicProducts = async (req, res, next) => {
       search,
       badge,
       page = 1,
-      limit = 10,
+      limit = 1000, // 🔥 FIX: return all products
     } = req.query;
 
     // -----------------------------
@@ -359,7 +361,7 @@ export const getPublicProducts = async (req, res, next) => {
 
     const filter = {
       businessId: business._id,
-      status: "ACTIVE",
+      status: "ACTIVE", // 🔥 IMPORTANT
     };
 
     // -----------------------------
@@ -367,17 +369,16 @@ export const getPublicProducts = async (req, res, next) => {
     // -----------------------------
     if (categoryId) filter.categoryId = categoryId;
 
-    // ✅ BADGE FILTER
     if (badge) {
       filter.badge = badge.toUpperCase();
     }
 
     // -----------------------------
-    // 🔍 SEARCH (AUTOCOMPLETE)
+    // 🔍 SEARCH
     // -----------------------------
     if (search) {
       filter.name_en = {
-        $regex: `^${search}`,
+        $regex: search, // 🔥 FIX
         $options: "i",
       };
     }
@@ -391,7 +392,7 @@ export const getPublicProducts = async (req, res, next) => {
       .select(
         "name_en name_ar productCode images categoryId variants badge"
       )
-      .populate("categoryId", "name_en name_ar") // ✅ both EN + AR
+      .populate("categoryId", "name_en name_ar")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
@@ -412,8 +413,6 @@ export const getPublicProducts = async (req, res, next) => {
     next(err);
   }
 };
-
-
 
 export const getPublicProductById = async (req, res, next) => {
   try {
